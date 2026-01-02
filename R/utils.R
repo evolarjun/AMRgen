@@ -136,6 +136,11 @@ utils::globalVariables(c(
 ))
 
 
+# dummy function to stop note 'All declared Imports should be used'
+ignore_unused_imports <- function() {
+  rlang::sym
+}
+
 #' @importFrom readr read_tsv
 process_input <- function(input) {
   if (is.character(input) && file.exists(input)) {
@@ -153,6 +158,8 @@ process_input <- function(input) {
     # If the input is neither a file nor a dataframe, stop with an error
     stop("Input must be either a valid file path or a dataframe.")
   }
+  # strip any leading hash (e.g. NCBI AST)
+  data <- data %>%  dplyr::rename_with(~stringr::str_remove(.x, "#"))
   # Return the dataframe
   return(data)
 }

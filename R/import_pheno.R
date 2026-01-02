@@ -18,7 +18,7 @@
 #'
 #' This function imports an antibiotic susceptibility testing (AST) dataset, processes the data, and optionally interprets the results based on MIC or disk diffusion data. It assumes that the input file is a tab-delimited text file (e.g., TSV) or CSV (which may be commpressed) and parses relevant columns (antibiotic names, species names, MIC or disk data) into suitable classes using the AMR package. It optionally can use the AMR package to interpret susceptibility phenotype (SIR) based on EUCAST or CLSI guidelines (human breakpoints and/or ECOFF). If expected columns are not found warnings will be given, and interpretation may not be possible.
 #' @param input A string representing a dataframe, or a path to an input file, containing the AST data in NCBI antibiogram format. These files can be downloaded from NCBI AST browser, e.g. https://www.ncbi.nlm.nih.gov/pathogens/ast#Pseudomonas%20aeruginosa
-#' @param sample_col A string indicating the name of the column with sample identifiers. If `NULL`, assume this is '#BioSample'.
+#' @param sample_col A string indicating the name of the column with sample identifiers. If `NULL`, assume this is 'BioSample'.
 #' @param interpret_eucast A logical value (default is FALSE). If `TRUE`, the function will interpret the susceptibility phenotype (SIR) for each row based on the MIC or disk diffusion values, against ECOFF human breakpoints. These will be reported in a new column `pheno_eucast`, of class 'sir'.
 #' @param interpret_clsi A logical value (default is FALSE). If `TRUE`, the function will interpret the susceptibility phenotype (SIR) for each row based on the MIC or disk diffusion values, against CLSI human breakpoints. These will be reported in a new column `pheno_clsi`, of class 'sir'.
 #' @param interpret_ecoff A logical value (default is FALSE). If `TRUE`, the function will interpret the wildtype vs nonwildtype status for each row based on the MIC or disk diffusion values, against epidemiological cut-off (ECOFF) values. These will be reported in a new column `ecoff`, of class 'sir' and coded as 'R' (nonwildtype) or 'S' (wildtype).
@@ -28,7 +28,7 @@
 #' @importFrom AMR as.ab as.disk as.mic as.mo as.sir
 #' @importFrom dplyr any_of coalesce if_else mutate relocate rename
 #' @return A data frame with the processed AST data, including additional columns:
-#' - `id`: The biological sample identifier (renamed from `#BioSample` or specified column).
+#' - `id`: The biological sample identifier (renamed from `BioSample` or specified column).
 #' - `spp_pheno`: The species phenotype, formatted using the `as.mo` function.
 #' - `drug_agent`: The antibiotic used in the test, formatted using the `as.ab` function.
 #' - `mic`: The minimum inhibitory concentration (MIC) value, formatted using the `as.mic` function.
@@ -52,7 +52,7 @@
 #' # import and re-interpret resistance (S/I/R) and WT/NWT (vs ECOFF) using AMR package
 #' pheno <- import_ncbi_ast(ecoli_ast_raw, interpret_eucast = TRUE, interpret_ecoff = TRUE)
 #' head(pheno)
-import_ncbi_ast <- function(input, sample_col = "#BioSample", source = NULL, species = NULL, ab = NULL,
+import_ncbi_ast <- function(input, sample_col = "BioSample", source = NULL, species = NULL, ab = NULL,
                             interpret_eucast = FALSE, interpret_clsi = FALSE, interpret_ecoff = FALSE) {
   ast <- process_input(input)
 

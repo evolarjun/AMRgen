@@ -6,7 +6,7 @@
 \usage{
 import_ncbi_ast(
   input,
-  sample_col = "#BioSample",
+  sample_col = "BioSample",
   source = NULL,
   species = NULL,
   ab = NULL,
@@ -18,7 +18,7 @@ import_ncbi_ast(
 \arguments{
 \item{input}{A string representing a dataframe, or a path to an input file, containing the AST data in NCBI antibiogram format. These files can be downloaded from NCBI AST browser, e.g. https://www.ncbi.nlm.nih.gov/pathogens/ast#Pseudomonas\%20aeruginosa}
 
-\item{sample_col}{A string indicating the name of the column with sample identifiers. If \code{NULL}, assume this is '#BioSample'.}
+\item{sample_col}{A string indicating the name of the column with sample identifiers. If \code{NULL}, assume this is 'BioSample'.}
 
 \item{source}{(optional) A single value to record as the source of these data points, e.g. "NCBI_browser". By default, the field 'BioProject' will be used to indicate the source for each row in the input file, but if this is missing or you want to override it with a single value for all samples, you may provide a source name via this parameter.}
 
@@ -35,7 +35,7 @@ import_ncbi_ast(
 \value{
 A data frame with the processed AST data, including additional columns:
 \itemize{
-\item \code{id}: The biological sample identifier (renamed from \verb{#BioSample} or specified column).
+\item \code{id}: The biological sample identifier (renamed from \code{BioSample} or specified column).
 \item \code{spp_pheno}: The species phenotype, formatted using the \code{as.mo} function.
 \item \code{drug_agent}: The antibiotic used in the test, formatted using the \code{as.ab} function.
 \item \code{mic}: The minimum inhibitory concentration (MIC) value, formatted using the \code{as.mic} function.
