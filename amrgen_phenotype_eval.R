@@ -26,7 +26,7 @@ option_list <- list(
   ),
   make_option(c("--drug_class_list"),
     type = "character", default = NULL,
-    help = "Comma-separated list of drug classes (e.g., 'Quinolones,Fluoroquinolones')", metavar = "character"
+    help = "Comma-separated list of drug classes (e.g., 'Quinolones,Fluoroquinolones')\nhttps://github.com/AMRverse/AMRgen/blob/main/data-raw/amrfp_drug_classes_agents.tsv", metavar = "character"
   ),
   make_option(c("--standard"),
     type = "character", default = "clsi",
