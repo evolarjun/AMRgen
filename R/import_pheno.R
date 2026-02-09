@@ -447,8 +447,192 @@ import_ast <- function(input, format = "ebi", interpret_eucast = FALSE,
     ast <- import_ncbi_ast(input, interpret_eucast = interpret_eucast, interpret_clsi = interpret_clsi, interpret_ecoff = interpret_ecoff, species = species, ab = ab)
   }
 
-  if (!is.null(source)) { ast <- ast %>% mutate(source=source)}
+  if (!is.null(source)) {
+    ast <- ast %>% mutate(source = source)
+  }
   ast <- ast %>% relocate(any_of(c("id", "drug_agent", "mic", "disk", "pheno_eucast", "pheno_clsi", "ecoff", "guideline", "method", "source", "pheno_provided", "spp_pheno")))
 
   return(ast)
+}
+
+#' Import AST Data from NCBI BioSample
+#'
+#' This function searches for BioSample records matching a genus and the "antibiogram" filter,
+#' fetches the XML records, and extracts the structured antibiogram tables. It then processes
+#' these data using `import_ncbi_ast` to return a standardized AST dataset.
+#'
+#' @param genus The genus name to search for (e.g., "Klebsiella").
+#' @param api_key Optional NCBI API key for faster requests (10 vs 3 per second).
+#' @param batch_size Number of records to fetch per batch (default 500). Max is usually 10000 but smaller is safer for large XML.
+#' @param max_records Optional limit on the total number of records to fetch. useful for testing.
+#' @param sample_col A string indicating the name of the column with sample identifiers. If `NULL`, assume this is 'BioSample'.Passed to `import_ncbi_ast`.
+#' @param interpret_eucast A logical value (default is FALSE). If `TRUE`, the function will interpret the susceptibility phenotype (SIR) for each row based on the MIC or disk diffusion values, against ECOFF human breakpoints. These will be reported in a new column `pheno_eucast`, of class 'sir'. Passed to `import_ncbi_ast`.
+#' @param interpret_clsi A logical value (default is FALSE). If `TRUE`, the function will interpret the susceptibility phenotype (SIR) for each row based on the MIC or disk diffusion values, against CLSI human breakpoints. These will be reported in a new column `pheno_clsi`, of class 'sir'. Passed to `import_ncbi_ast`.
+#' @param interpret_ecoff A logical value (default is FALSE). If `TRUE`, the function will interpret the wildtype vs nonwildtype status for each row based on the MIC or disk diffusion values, against epidemiological cut-off (ECOFF) values. These will be reported in a new column `ecoff`, of class 'sir' and coded as 'R' (nonwildtype) or 'S' (wildtype). Passed to `import_ncbi_ast`.
+#' @param species (optional) Name of the species to use for phenotype interpretation. By default, the field 'Scientific name' will be assumed to specify the species for each row in the input file, but if this is missing or you want to override it in the interpretation step, you may provide a single species name via this parameter. Passed to `import_ncbi_ast`.
+#' @param ab (optional) Name of the antibiotic to use for phenotype interpretation. By default, the field 'Antibiotic' will be assumed to specify the antibiotic for each row in the input file, but if this is missing or you want to override it in the interpretation step, you may provide a single antibiotic name via this parameter. Passed to `import_ncbi_ast`.
+#' @param source (optional) A single value to record as the source of these data points, e.g. "NCBI_BioSample_API". Passed to `import_ncbi_ast`.
+#' @importFrom rentrez set_entrez_key entrez_search entrez_fetch
+#' @importFrom xml2 read_xml xml_find_all xml_attr xml_find_first xml_text
+#' @importFrom dplyr mutate if_else bind_rows
+#' @importFrom purrr map_dfr
+#' @importFrom tibble as_tibble
+#' @importFrom rlang set_names
+#' @return A data frame with the processed AST data, as returned by `import_ncbi_ast`.
+#' @export
+#' @examples
+#' \dontrun{
+#' # fetch and process data for Klebsiella
+#' pheno <- import_biosample_ast("Klebsiella", batch_size = 50)
+#' head(pheno)
+#' }
+import_biosample_ast <- function(genus, api_key = NULL, batch_size = 500, max_records = NULL,
+                                 sample_col = "BioSample", source = NULL, species = NULL, ab = NULL,
+                                 interpret_eucast = FALSE, interpret_clsi = FALSE, interpret_ecoff = FALSE) {
+  if (!is.null(api_key)) {
+    rentrez::set_entrez_key(api_key)
+  }
+
+  # 1. Search for records
+  search_term <- paste0(genus, " AND antibiogram[filter]")
+  message(paste("Searching for:", search_term))
+
+  search_results <- rentrez::entrez_search(db = "biosample", term = search_term, use_history = TRUE)
+
+  if (search_results$count == 0) {
+    message("No records found with antibiogram data.")
+    return(NULL)
+  }
+
+  count_to_fetch <- search_results$count
+  if (!is.null(max_records)) {
+    count_to_fetch <- min(count_to_fetch, max_records)
+  }
+
+  message(paste("Found", search_results$count, "records. Fetching", count_to_fetch, "records..."))
+
+  # 2. Fetch and parse in batches
+  all_antibiograms <- list()
+
+  for (start_idx in seq(0, count_to_fetch - 1, by = batch_size)) {
+    # Determine size for this batch
+    current_batch_size <- min(batch_size, count_to_fetch - start_idx)
+
+    # Determine retry info
+    message(paste("Fetching records", start_idx + 1, "to", start_idx + current_batch_size))
+
+    # Fetch XML
+    recs <- tryCatch(
+      {
+        rentrez::entrez_fetch(
+          db = "biosample",
+          web_history = search_results$web_history,
+          retstart = start_idx,
+          retmax = current_batch_size,
+          rettype = "xml",
+          parsed = FALSE
+        )
+      },
+      error = function(e) {
+        warning(paste("Error fetching batch starting at", start_idx, ":", e$message))
+        return(NULL)
+      }
+    )
+
+    if (is.null(recs)) next
+
+    # Parse the entire batch XML
+    batch_xml <- xml2::read_xml(recs)
+
+    # Parse each BioSample
+    biosamples <- xml2::xml_find_all(batch_xml, "//BioSample")
+
+    batch_data <- purrr::map_dfr(biosamples, function(bs_node) {
+      # Extract Accession
+      accession <- xml2::xml_attr(bs_node, "accession")
+
+      # Extract Organism (Scientific name)
+      organism <- xml2::xml_attr(xml2::xml_find_first(bs_node, ".//Organism"), "taxonomy_name")
+
+      # Extract BioProject (from Links)
+      bioproject <- xml2::xml_text(xml2::xml_find_first(bs_node, ".//Link[@target='bioproject']"))
+
+      # Find Antibiogram Table
+      table_node <- xml2::xml_find_first(bs_node, ".//Description/Comment/Table[contains(@class, 'Antibiogram')]")
+      if (length(table_node) == 0) {
+        table_node <- xml2::xml_find_first(bs_node, ".//Table[Caption='Antibiogram']")
+      }
+
+      if (length(table_node) == 0) {
+        return(NULL)
+      }
+
+      # Parse Header
+      headers <- xml2::xml_text(xml2::xml_find_all(table_node, ".//Header/Cell"))
+
+      # Parse Rows
+      rows <- xml2::xml_find_all(table_node, ".//Body/Row")
+      if (length(rows) == 0) {
+        return(NULL)
+      }
+
+      # Extract and map
+      row_data <- purrr::map_dfr(rows, function(row) {
+        cells <- xml2::xml_text(xml2::xml_find_all(row, ".//Cell"))
+        # ensure we match header length (truncate or pad if necessary, though XML should be consistent)
+        if (length(cells) > length(headers)) cells <- cells[1:length(headers)]
+        if (length(cells) < length(headers)) cells <- c(cells, rep(NA, length(headers) - length(cells)))
+
+        row_named <- rlang::set_names(as.list(cells), headers)
+        tibble::as_tibble(row_named)
+      })
+
+      # Add sample-level metadata
+      row_data <- row_data %>%
+        dplyr::mutate(
+          BioSample = accession,
+          `Scientific name` = organism,
+          BioProject = bioproject
+        )
+
+      return(row_data)
+    })
+
+    # Post-process batch data
+    if (!is.null(batch_data) && nrow(batch_data) > 0) {
+      # Normalize measurement columns
+      if ("Measurement" %in% names(batch_data) && "Measurement units" %in% names(batch_data)) {
+        batch_data <- batch_data %>%
+          dplyr::mutate(
+            `MIC (mg/L)` = dplyr::if_else(`Measurement units` == "mg/L", Measurement, NA_character_),
+            `Disk diffusion (mm)` = dplyr::if_else(`Measurement units` == "mm", Measurement, NA_character_)
+          )
+      }
+      all_antibiograms[[length(all_antibiograms) + 1]] <- batch_data
+    }
+  }
+
+  # 3. Combine all batches
+  final_df <- dplyr::bind_rows(all_antibiograms)
+
+  if (nrow(final_df) == 0) {
+    warning("No antibiogram data could be extracted from found records.")
+    return(NULL)
+  }
+
+  # 4. Process using import_ncbi_ast
+  # Pass dataframe directly to import_ncbi_ast
+  message("Processing data with import_ncbi_ast...")
+  processed_ast <- import_ncbi_ast(
+    input = final_df,
+    sample_col = sample_col,
+    source = source,
+    species = species,
+    ab = ab,
+    interpret_eucast = interpret_eucast,
+    interpret_clsi = interpret_clsi,
+    interpret_ecoff = interpret_ecoff
+  )
+
+  return(processed_ast)
 }
