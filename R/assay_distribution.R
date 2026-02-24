@@ -81,7 +81,7 @@ assay_by_var <- function(pheno_table, antibiotic = NULL, measure = "mic",
                          x_axis_label = "Measurement", y_axis_label = "Count",
                          colour_legend_label = NULL, plot_title = NULL) {
   if (!is.null(antibiotic)) {
-    if ("drug_agent" %in% pheno_table) {
+    if ("drug_agent" %in% colnames(pheno_table)) {
       pheno_table <- pheno_table %>% filter(drug_agent == as.ab(antibiotic))
       if (nrow(pheno_table) == 0) {
         stop(paste0("Antibiotic '", antibiotic, "' not found in drug_agent column"))
