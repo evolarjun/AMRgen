@@ -188,6 +188,7 @@ download_ebi <- function(data = "phenotype",
   } else if (!is.null(antibiotic)) {
     if (!force_antibiotic) {
       antibiotic <- na.omit(tolower(AMR::ab_name(AMR::as.ab(antibiotic))))
+      antibiotic <- sub("/", "-", antibiotic)
     }
     cat(paste("...Filtering by antibiotic:", paste(antibiotic, collapse = ", "), "\n"))
     ebi_dat <- ebi_dat %>%
