@@ -684,7 +684,7 @@ amr_upset <- function(binary_matrix = NULL, assay = "mic",
 #' @param plot_category Logical indicating whether to include a stacked bar plot showing, for each marker combination, the proportion of samples with each phenotype classification (specified by the `pheno` column in the input file). Default is `TRUE`.
 #' @param print_category_counts Logical indicating whether, if `plot_category=TRUE`, to print the number of strains in each resistance category for each marker combination in the plot. Default is `FALSE`.
 #' @param plot_ppv Logical indicating whether to plot the estimates for positive predictive value, for each marker combination (default `TRUE`).
-#' @param plot_assay Logical indicating whether to plot the distribution of MIC/disk assay values, for each marker combination (default `FALSE`).
+#' @param plot_assay Logical indicating whether to plot the distribution of MIC/disk assay values, for each marker combination (default `FALSE`). Note you must also indicate which assay column to plot (`"mic"` or `"disk"`) via `assay`.
 #' @param assay A character string indicating whether to plot MIC or disk diffusion data. Must be one of:
 #' - `NULL`: (default) if no assay data is to be plotted
 #' - `"mic"`: plot MIC data stored in column `mic`
