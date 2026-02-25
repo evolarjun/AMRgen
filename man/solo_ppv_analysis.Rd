@@ -93,16 +93,9 @@ binary_matrix <- get_binary_matrix(
 )
 
 # Run solo PPV analysis plot analysis using this binary_matrix
-solo_ppv_analysis(binary_matrix = binary_matrix)
-
-# Alternatively, generate binary matrix and solo PPV analysis in one step
-# (note `antibiotic` and `drug_class` list are optional here, and only used
-# for titling the plot)
-soloPPV_cipro <- solo_ppv_analysis(
-  binary_matrix = binary_matrix,
-  antibiotic = "Ciprofloxacin",
-  drug_class_list = c("Quinolones")
-)
+(note `antibiotic` and `drug_class` list are optional here, and only used
+for titling the plot)
+soloPPV_cipro <- solo_ppv_analysis(binary_matrix = binary_matrix)
 
 soloPPV_cipro$solo_stats
 soloPPV_cipro$combined_plot
