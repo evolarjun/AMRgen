@@ -256,10 +256,11 @@ combo_stats <- function(binary_matrix, min_set_size = 2, order = "",
   if ("NWT" %in% colnames(binary_matrix_wide)) {
     summary <- binary_matrix_wide %>%
       group_by(combination_id) %>%
-      summarise(NWT.n = sum(NWT, na.rm = TRUE)) %>%
+      summarise(NWT.n = sum(NWT, na.rm = TRUE), 
+                NWT.denom = sum(!is.na(NWT))) %>%
       right_join(summary, by = "combination_id") %>%
-      mutate(NWT.ppv = NWT.n / n, .after = NWT.n) %>%
-      mutate(NWT.se = sqrt(NWT.ppv * (1 - NWT.ppv) / n)) %>%
+      mutate(NWT.ppv = NWT.n / NWT.denom, .after = NWT.n) %>%
+      mutate(NWT.se = sqrt(NWT.ppv * (1 - NWT.ppv) / NWT.denom)) %>%
       mutate(NWT.ci_upper = pmin(1, NWT.ppv + 1.96 * NWT.se), .after = NWT.ppv) %>%
       mutate(NWT.ci_lower = pmax(0, NWT.ppv - 1.96 * NWT.se), .after = NWT.ppv) %>%
       select(-NWT.se)
@@ -267,10 +268,11 @@ combo_stats <- function(binary_matrix, min_set_size = 2, order = "",
   if ("I" %in% colnames(binary_matrix_wide)) {
     summary <- binary_matrix_wide %>%
       group_by(combination_id) %>%
-      summarise(I.n = sum(I, na.rm = TRUE)) %>%
+      summarise(I.n = sum(I, na.rm = TRUE),
+                I.denom = sum(!is.na(I))) %>%
       right_join(summary, by = "combination_id") %>%
-      mutate(I.ppv = I.n / n, .after = I.n) %>%
-      mutate(I.se = sqrt(I.ppv * (1 - I.ppv) / n)) %>%
+      mutate(I.ppv = I.n / I.denom, .after = I.n) %>%
+      mutate(I.se = sqrt(I.ppv * (1 - I.ppv) / I.denom)) %>%
       mutate(I.ci_upper = pmin(1, I.ppv + 1.96 * I.se), .after = I.ppv) %>%
       mutate(I.ci_lower = pmax(0, I.ppv - 1.96 * I.se), .after = I.ppv) %>%
       select(-I.se)
@@ -278,10 +280,11 @@ combo_stats <- function(binary_matrix, min_set_size = 2, order = "",
   if ("R" %in% colnames(binary_matrix_wide)) {
     summary <- binary_matrix_wide %>%
       group_by(combination_id) %>%
-      summarise(R.n = sum(R, na.rm = TRUE)) %>%
+      summarise(R.n = sum(R, na.rm = TRUE),
+                R.denom = sum(!is.na(R))) %>%
       right_join(summary, by = "combination_id") %>%
-      mutate(R.ppv = R.n / n, .after = R.n) %>%
-      mutate(R.se = sqrt(R.ppv * (1 - R.ppv) / n)) %>%
+      mutate(R.ppv = R.n / R.denom, .after = R.n) %>%
+      mutate(R.se = sqrt(R.ppv * (1 - R.ppv) / R.denom)) %>%
       mutate(R.ci_upper = pmin(1, R.ppv + 1.96 * R.se), .after = R.ppv) %>%
       mutate(R.ci_lower = pmax(0, R.ppv - 1.96 * R.se), .after = R.ppv) %>%
       select(-R.se)
@@ -852,9 +855,21 @@ ppv <- function(binary_matrix = NULL,
     }
   }
 
-  row_counts <- combo_data$summary %>%
+  # add counts for each row to the right hand side
+  
+  if ("R.denom" %in% colnames(combo_data$summary) & "NWT.denom" %in% colnames(combo_data$summary)) {
+    row_counts <- combo_data$summary %>%
+      mutate(count_label = paste0("(n=", R.denom, ", ", NWT.denom, ")"))
+  } else if ("R.denom" %in% colnames(combo_data$summary)) {
+    row_counts <- combo_data$summary %>%
+      mutate(count_label = paste0("(n=", R.denom, ")"))
+  } else if ("NWT.denom" %in% colnames(combo_data$summary)) {
+    row_counts <- combo_data$summary %>%
+      mutate(count_label = paste0("(n=", NWT.denom, ")"))
+  } 
+      
+  row_counts <- row_counts %>%
     filter(n >= min_set_size) %>%
-    mutate(count_label = paste0("(n=", n, ")")) %>%
     ggplot(aes(y = combination_id, x = 1, label = count_label)) +
     geom_text(hjust = 0, size = 3) +
     scale_x_continuous(limits = c(1, 1.5), expand = c(0, 0)) +
