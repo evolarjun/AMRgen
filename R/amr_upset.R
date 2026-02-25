@@ -77,7 +77,7 @@
 #'   keep_assay_values_from = "mic"
 #' )
 #'
-#' combo_stats(binary_matrix, min_set_size = 3, order = "value", assay = "mic")
+#' combo_matrix <- combo_stats(binary_matrix, min_set_size = 3, order = "value", assay = "mic")
 #' }
 combo_stats <- function(binary_matrix, min_set_size = 2, order = "",
                         assay = "mic",
@@ -554,10 +554,10 @@ combo_stats <- function(binary_matrix, min_set_size = 2, order = "",
 #' )
 #'
 #' # Run upset plot analysis using this binary_matrix
-#' amr_upset(binary_matrix, assay = "mic")
+#' cip_mic_upset <- amr_upset(binary_matrix, assay = "mic")
 #'
 #' # Alternatively, generate binary matrix and run ppv() in one step
-#' amr_upset(
+#' cip_mic_upset <- amr_upset(
 #'   assay = "mic",
 #'   geno_table = ecoli_geno,
 #'   pheno_table = ecoli_ast,
@@ -723,10 +723,10 @@ amr_upset <- function(binary_matrix = NULL, assay = "mic",
 #' )
 #'
 #' # Run ppv analysis using this binary_matrix
-#' ppv(binary_matrix)
+#' ppv <- ppv(binary_matrix)
 #'
 #' # Alternatively, generate binary matrix and run ppv() in one step
-#' ppv(
+#' ppv <- ppv(
 #'   geno_table = ecoli_geno,
 #'   pheno_table = ecoli_ast,
 #'   antibiotic = "Ciprofloxacin",

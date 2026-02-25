@@ -66,8 +66,8 @@
 #' )
 #'
 #' # Run solo PPV analysis plot analysis using this binary_matrix
-#' (note `antibiotic` and `drug_class` list are optional here, and only used
-#' for titling the plot)
+#' # (note antibiotic and drug_class list are optional here, and only used
+#' # for titling the plot)
 #' soloPPV_cipro <- solo_ppv_analysis(binary_matrix = binary_matrix)
 #'
 #' soloPPV_cipro$solo_stats
