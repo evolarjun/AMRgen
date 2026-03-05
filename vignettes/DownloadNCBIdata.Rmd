@@ -33,6 +33,7 @@ The `download_ncbi_ast()` function lets you download antibiogram data from NCBI 
 
 This function is quite slow, especially for organisms with many BioSamples to search through, but it is free and requires no authentication to use. Alternatively, you may prefer to try the BigQuery functions below (Option 1b), which provide more efficient and complete access to NCBI data but require authentication via a Google Cloud account.
 
+
 ``` {r download_ncbi_data_realnotrun, eval=F}
 # Download Staphylococcus aureus AST data from NCBI, filtering for amikacin and doxycycline, and re-interpret with EUCAST breakpoints
 staph_ast_ncbi <- download_ncbi_ast(
@@ -42,8 +43,12 @@ staph_ast_ncbi <- download_ncbi_ast(
   interpret_eucast = TRUE
 ) # reformat must be true to use interpret_* argument
 ```
+```{r dummy_download_ncbi_data, echo=FALSE}
+# This runs during the build but is hidden from the user to avoid network access
+staph_ast_ncbi <- readRDS('data/staph_ast_ncbi.rds.xz')
+```
 
-``` {r download_ncbi_data_dummy}
+``` {r check_ncbi_biosample_download}
 # check how many samples retrieved
 nrow(staph_ast_ncbi)
 
@@ -59,6 +64,10 @@ staph_ast_ncbi_raw <- download_ncbi_ast(
   reformat = FALSE,
   interpret_eucast = FALSE
 )
+```
+```{r dummy_download_ncbi_dataraw, echo=FALSE}
+# This runs during the build but is hidden from the user to avoid network access
+staph_ast_ncbi_raw <- readRDS('data/staph_ast_ncbi_raw.rds.xz')
 ```
 
 ``` {r download_ncbi_dataraw_dummy}
@@ -95,6 +104,10 @@ staph_ast_ncbi_cloud_raw <- query_ncbi_bq_ast(
   antibiotic = c("amikacin", "DOX")
 )
 ```
+```{r dummy_download_ncbi_cloud_raw, echo=FALSE}
+# This runs during the build but is hidden from the user to avoid network access
+staph_ast_ncbi_cloud_raw <- readRDS('data/staph_ast_ncbi_cloud_raw.rds.xz')
+```
 
 ``` {r download_ncbi_ast_bigquery_dummy}
 # Import and reinterpret using CLSI breakpoints
@@ -115,14 +128,19 @@ staph_geno_ncbi_cloud_raw <- query_ncbi_bq_geno(
   geno_class = c("AMINOGLYCOSIDE", "TETRACYCLINE")
 ) %>% filter(biosample_acc %in% staph_ast_ncbi_cloud_raw$BioSample)
 ```
+```{r dummy_geno_ncbi_cloud_raw, echo=FALSE}
+# This runs during the build but is hidden from the user to avoid network access
+staph_geno_ncbi_cloud_raw <- readRDS('data/staph_geno_ncbi_cloud_raw.rds.xz')
+```
+
 
 ``` {r download_ncbi_geno_bigquery_dummy}
-staph_geno_ncbi_cloud_raw
+head(staph_geno_ncbi_cloud_raw)
 
 # Import and parse results into AMRgen genotype table
 staph_geno_ncbi_cloud <- import_amrfp(staph_geno_ncbi_cloud_raw, sample_col = "biosample_acc")
 
-staph_geno_ncbi_cloud
+head(staph_geno_ncbi_cloud)
 ```
 
 
